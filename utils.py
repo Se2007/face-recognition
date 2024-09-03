@@ -16,7 +16,6 @@ def train_one_epoch(model, train_loader, loss_fn, optimizer, metric, epoch=None,
     for inputs, targets in tepoch:
       if epoch:
         tepoch.set_description(f'Epoch {epoch}')
-      print(inputs)
 
       inputs = inputs.to(device)
       targets = targets.to(device).float().unsqueeze(1)
