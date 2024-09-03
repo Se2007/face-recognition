@@ -1,0 +1,8 @@
+dataset/
+__pycache__/
+data.csv
+data1.csv
+images/
+save_model/
+saved/
+vid/
