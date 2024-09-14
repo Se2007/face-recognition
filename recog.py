@@ -7,10 +7,28 @@ from types import MethodType
 import pandas as pd
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model_path = './save_model/model.pth'
 
 ### helper function
+def load(model, device='cpu', reset = False, load_path = None):
+    model = model
+
+    if reset == False : 
+        if load_path is None :
+            print('give path for load model')
+        if load_path is not None:
+            if device == 'cpu':
+                sate = torch.load(load_path,map_location=torch.device('cpu'))
+            else :
+                sate = torch.load(load_path)
+            
+            model.load_state_dict(sate['state_dict'])
+    return model
+
+
 def encode(img):
-    res = resnet(torch.Tensor(img).to(device))
+    # print(torch.Tensor(img).shape)
+    res = torch.sigmoid(resnet(torch.Tensor(img).to(device)))
     return res
 
 def detect_box(self, img, save_path=None):
@@ -25,32 +43,27 @@ def detect_box(self, img, save_path=None):
     faces = self.extract(img, batch_boxes, save_path)
     return batch_boxes, faces
 
+##################
+### Load Model ###
+##################
 
-### load model
-resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
-mtcnn = MTCNN(
-  image_size=224, keep_all=True, thresholds=[0.4, 0.5, 0.5], min_face_size=60, device=device
-)
+
+resnet = InceptionResnetV1(pretrained='vggface2', classify=True, num_classes=1).to(device)
+resnet = load(resnet, device=device, load_path=model_path).eval()
+# resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
+mtcnn = MTCNN(image_size=224, keep_all=True, device=device)
 mtcnn.detect_box = MethodType(detect_box, mtcnn)
 
-### get encoded features for all saved images
-'''
-saved_pictures = "./saved/"
-all_people_faces = {}
-for person_face in os.listdir(saved_pictures):
-    img = cv2.imread(f'{saved_pictures}/{person_face.split(".")[0]}.jpg')
-    cropped = mtcnn(img)
-    if cropped is not None:
-        all_people_faces[person_face.split('.')[0]] = encode(cropped)[0, :]'''
 
-file_path = 'data1.csv'
 
-face_id_df = pd.read_csv(file_path)
-# print(face_id_df.head())
-face_id = {}
-for column_name, column_data in face_id_df.items():
-    id = torch.tensor(column_data.values)
-    face_id[column_name] = id
+# file_path = 'data1.csv'
+
+# face_id_df = pd.read_csv(file_path)
+# # print(face_id_df.head())
+# face_id = {}
+# for column_name, column_data in face_id_df.items():
+#     id = torch.tensor(column_data.values)
+#     face_id[column_name] = id
 
 ###########
 def detect(cam=0, thres=0.7):
@@ -62,19 +75,23 @@ def detect(cam=0, thres=0.7):
         if cropped_images is not None:
             for box, cropped in zip(batch_boxes, cropped_images):
                 x, y, x2, y2 = [int(x) for x in box]
-                img_embedding = encode(cropped.unsqueeze(0))
-                detect_dict = {}
-                for k, v in face_id.items():
-                    detect_dict[k] = (v.to(device) - img_embedding).norm().item()
+                pred = encode(cropped.unsqueeze(0))
+                print(pred.item())
+                # detect_dict = {}
+                # for k, v in face_id.items():
+                #     detect_dict[k] = (v.to(device) - img_embedding).norm().item()
 
-                min_key = min(detect_dict, key=detect_dict.get)
+                # min_key = min(detect_dict, key=detect_dict.get)
 
-                if int(min_key) < 738:
-                    name = 'Sepehr'
-                if detect_dict[min_key] >= thres:
+                # if int(min_key) < 738:
+                #     name = 'Sepehr'
+                # if detect_dict[min_key] >= thres:
+                #     name = 'Undetected'
+
+                if pred > .98:
+                    name = 'sepehr'
+                else : 
                     name = 'Undetected'
-
-                
                 
                 cv2.rectangle(img0, (x, y), (x2, y2), (0, 0, 255), 2)
                 cv2.putText(

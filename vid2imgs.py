@@ -33,6 +33,6 @@ def extract_frames(video_path, output_folder):
 
 
 
-video_path = './vid/sep3.mp4'
-output_folder = './dataset/train/1'
+video_path = './vid/sadra.mp4'
+output_folder = './dataset/0'
 extract_frames(video_path, output_folder)
