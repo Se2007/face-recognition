@@ -1,4 +1,4 @@
-# Medical Image Segmentation Project
+# Face Recognition Project
 
 ## Overview
 
